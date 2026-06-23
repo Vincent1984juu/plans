@@ -652,19 +652,46 @@ function saveAsImage() {
 }
 
 function syncToDingTalk() {
+    // 先确保数据已保存到URL
+    if (!window.location.hash.includes('#data=')) {
+        saveToUrlHash();
+    }
     const fullUrl = window.location.href;
-    if (navigator.clipboard) {
+    
+    function showCopySuccess() {
+        showSyncHint('✅ 完整报告链接已复制！请返回【满分学院AI助教】发送此链接，AI助手会自动同步到钉钉表格。');
+        // 兜底：alert 确保用户看到
+        setTimeout(() => {
+            alert('✅ 链接已复制！\n\n请返回【满分学院AI助教】发送此链接，AI会自动同步到钉钉表格。');
+        }, 100);
+    }
+    
+    if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(fullUrl).then(() => {
-            showSyncHint('✅ 完整报告链接已复制！请返回【满分学院AI助教】发送此链接，AI助手会自动同步到钉钉表格。');
+            showCopySuccess();
+        }).catch(err => {
+            console.log('clipboard失败，fallback:', err);
+            fallbackCopy(fullUrl);
         });
     } else {
+        fallbackCopy(fullUrl);
+    }
+    
+    function fallbackCopy(text) {
         const textarea = document.createElement('textarea');
-        textarea.value = fullUrl;
+        textarea.value = text;
+        textarea.style.position = 'fixed';
+        textarea.style.left = '-9999px';
         document.body.appendChild(textarea);
         textarea.select();
-        document.execCommand('copy');
+        try {
+            document.execCommand('copy');
+            showCopySuccess();
+        } catch (err) {
+            console.log('copy失败:', err);
+            alert('请手动复制链接:\n\n' + text);
+        }
         document.body.removeChild(textarea);
-        showSyncHint('✅ 完整报告链接已复制！请返回【满分学院AI助教】发送此链接，AI助手会自动同步到钉钉表格。');
     }
 }
 
